@@ -1,0 +1,21 @@
+{
+	"name": "npm",
+	"version": "1.0.0",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"debug": "nodemon --inspect index.js",
+		"start": "node --watch index.js"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"dependencies": {
+		"express": "^4.21.2",
+		"pug": "^3.0.3"
+	},
+	"devDependencies": {
+		"nodemon": "^3.1.9"
+	}
+}
