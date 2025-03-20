@@ -1,0 +1,19 @@
+{
+	"name": "buoi3",
+	"version": "1.0.0",
+	"main": "index.js",
+	"license": "MIT",
+	"scripts": {
+		"start": "node index.js --watch"
+	},
+	"devDependencies": {
+		"nodemon": "^3.1.9"
+	},
+	"dependencies": {
+		"dotenv": "^16.4.7",
+		"express": "^4.21.2",
+		"http-status-codes": "^2.3.0",
+		"morgan": "^1.10.0",
+		"pug": "^3.0.3"
+	}
+}
