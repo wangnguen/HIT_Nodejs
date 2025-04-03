@@ -37,8 +37,8 @@ const createUser = async (req, res) => {
 
     const isExistEmail = await User.findOne({ email: email });
     if (isExistEmail) {
-      res.status(httpStatus.CONFLICTT).json({
-        statusCode: httpStatus.CONFLICTT,
+      res.status(httpStatus.CONFLICT).json({
+        statusCode: httpStatus.CONFLICT,
         message: 'Email đã tồn tại',
         data: {},
       });
@@ -159,4 +159,48 @@ const deleteUser = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, createUser, updateUser, getUserById, deleteUser };
+const searchUserByName = async (req, res) => {
+  try {
+    const fullName = req.query.name;
+    if (!fullName) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        statusCode: httpStatus.BAD_REQUEST,
+        message: 'Tên tìm kiếm không được để trống',
+        data: {},
+      });
+    }
+
+    const user = await User.findOne({
+      fullName: { $regex: fullName, $options: 'i' },
+    });
+
+    if (!user) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        statusCode: httpStatus.NOT_FOUND,
+        message: 'Không tìm thấy người dùng',
+        data: {},
+      });
+    }
+
+    res.status(httpStatus.OK).json({
+      statusCode: httpStatus.OK,
+      message: 'Tìm kiếm thành công',
+      data: { user },
+    });
+  } catch (error) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Đã xảy ra lỗi',
+      data: {},
+    });
+  }
+};
+
+module.exports = {
+  createUser,
+  updateUser,
+  deleteUser,
+  getUsers,
+  searchUserByName,
+  getUserById,
+};
