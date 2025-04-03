@@ -101,4 +101,24 @@ const updateUser = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, createUser, updateUser };
+const getUserById = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const user = await User.findOne({ _id: id });
+    res.status(httpStatus.OK).json({
+      statusCode: httpStatus.OK,
+      message: 'Lấy danh người dùng thành công',
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Đã xảy ra lỗi',
+      data: {},
+    });
+  }
+};
+
+module.exports = { getUsers, createUser, updateUser, getUserById };
