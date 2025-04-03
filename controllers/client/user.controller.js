@@ -104,6 +104,15 @@ const updateUser = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const id = req.params.id;
+
+    if (!id) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        statusCode: httpStatus.NOT_FOUND,
+        message: 'Người dùng không tồn tại',
+        data: {},
+      });
+    }
+
     const user = await User.findOne({ _id: id });
     res.status(httpStatus.OK).json({
       statusCode: httpStatus.OK,
