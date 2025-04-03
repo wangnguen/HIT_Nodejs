@@ -121,4 +121,33 @@ const getUserById = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, createUser, updateUser, getUserById };
+const deleteUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    if (!id) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        statusCode: httpStatus.NOT_FOUND,
+        message: 'Người dùng không tồn tại',
+        data: {},
+      });
+    }
+
+    const user = await User.deleteOne({ _id: id });
+    res.status(httpStatus.OK).json({
+      statusCode: httpStatus.OK,
+      message: 'Xoá người dùng thành công',
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Đã xảy ra lỗi',
+      data: {},
+    });
+  }
+};
+
+module.exports = { getUsers, createUser, updateUser, getUserById, deleteUser };
