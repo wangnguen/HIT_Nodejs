@@ -1,164 +1,206 @@
-const { v4: uuidv4 } = require('uuid');
 const httpStatus = require('http-status-codes');
-const { use } = require('../../routes/client/home.route');
-const e = require('express');
-
-const users = [
-  {
-    id: 'eea8d8db-6040-46c4-9329-349bbb5d52e9',
-    first_name: 'Andris',
-    last_name: 'Capelen',
-    email: 'acapelen0@cornell.edu',
-    isVerified: true,
-  },
-  {
-    id: 'b888cf0f-b662-4651-8c73-975a6fc4f0a8',
-    first_name: 'Jeffy',
-    last_name: 'Barthropp',
-    email: 'jbarthropp1@howstuffworks.com',
-    isVerified: true,
-  },
-  {
-    id: 'f4e1e075-e347-4d43-952d-887d20bd1ea5',
-    first_name: 'Dana',
-    last_name: 'Yegorkov',
-    email: 'dyegorkov2@plala.or.jp',
-    isVerified: false,
-  },
-  {
-    id: '3878f6b6-d792-4080-a7df-736ad11784e5',
-    first_name: 'Noak',
-    last_name: 'Croot',
-    email: 'ncroot3@ca.gov',
-    isVerified: true,
-  },
-  {
-    id: '1d04ca3e-ce16-4e2a-bf59-4e1e6869dd3d',
-    first_name: 'Joannes',
-    last_name: 'Castelletti',
-    email: 'jcastelletti4@123-reg.co.uk',
-    isVerified: false,
-  },
-];
-
-// GET: getUser
-const getUser = (req, res) => {
-  res.status(httpStatus.OK).json({
-    statusCode: httpStatus.OK,
-    message: 'Get list of users successsfully',
-    data: {
-      users,
-    },
-  });
-};
-
-// GET: getUserById
-const getUserById = (req, res) => {
-  const { id } = req.params;
-  const user = users.find((user) => user.id === id);
-
-  if (!user) {
-    return res.status(httpStatus.NOT_FOUND).json({
-      statusCode: httpStatus.NOT_FOUND,
-      message: 'User id not found',
+const User = require('../../models/user.model');
+const bcrypt = require('bcryptjs');
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({});
+    // .select('-password')
+    res.status(httpStatus.OK).json({
+      statusCode: httpStatus.OK,
+      message: 'Lấy danh sách người dùng',
+      data: {
+        users,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Đã xảy ra lỗi',
+      data: {},
     });
   }
-
-  res.status(httpStatus.OK).json({
-    statusCode: httpStatus.OK,
-    message: 'Get user information succesfully',
-    data: {
-      user,
-    },
-  });
 };
-// POST: createUser
-const createUser = (req, res) => {
-  const { first_name, last_name, email, isVerified } = req.body;
-  if (users.find((user) => user.email === email)) {
-    return res.status(httpStatus.BAD_REQUEST).json({
-      statusCode: httpStatus.BAD_REQUEST,
+
+const createUser = async (req, res) => {
+  try {
+    const { fullName, email, password } = req.body;
+    if (!fullName || !email || !password) {
+      console.log(fullName, email, password);
+      res.status(httpStatus.BAD_REQUEST).json({
+        statusCode: httpStatus.BAD_REQUEST,
+        message: 'Vui lòng nhập đủ các trường',
+        data: {},
+      });
+      return;
+    }
+
+    const isExistEmail = await User.findOne({ email: email });
+    if (isExistEmail) {
+      res.status(httpStatus.CONFLICT).json({
+        statusCode: httpStatus.CONFLICT,
+        message: 'Email đã tồn tại',
+        data: {},
+      });
+      return;
+    }
+    const salt = bcrypt.genSaltSync(10);
+    const hashPassword = bcrypt.hashSync(password, salt);
+
+    const user = await User.create({
+      fullName: fullName,
+      email: email,
+      password: hashPassword,
+    });
+    res.status(httpStatus.CREATED).json({
+      statusCode: httpStatus.CREATED,
+      message: 'Tạo người dùng thành công.',
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Đã xảy ra lỗi',
+      data: {},
     });
   }
-
-  const user = {
-    id: uuidv4(),
-    first_name,
-    last_name,
-    email,
-    isVerified,
-  };
-  users.push(user);
-
-  res.status(httpStatus.CREATED).json({
-    statusCode: httpStatus.CREATED,
-    message: 'Create successful users',
-    data: {
-      user,
-    },
-  });
 };
-// PUT: updateUser
-const updateUser = (req, res) => {
-  const { id } = req.params;
-  const user = users.find((user) => user.id === id);
-  const { first_name, last_name, email } = req.body;
 
-  if (!user) {
-    return res.status(httpStatus.NOT_FOUND).json({
-      statusCode: httpStatus.NOT_FOUND,
-      message: 'User id not found',
+const updateUser = async (req, res) => {
+  try {
+    // const user = await User.findById(req.params.id);
+    // Object.assign(user, req.body);
+    // await user.save();
+
+    const userUpdate = req.body;
+    const user = await User.findByIdAndUpdate(req.params.id, userUpdate);
+    if (!user) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        statusCode: httpStatus.NOT_FOUND,
+        message: 'Người dùng không tồn tại',
+        data: {},
+      });
+    }
+
+    res.status(httpStatus.OK).json({
+      statusCode: httpStatus.OK,
+      message: 'Cập nhật người dùng thành công.',
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Đã xảy ra lỗi',
+      data: {},
     });
   }
-  // cap nhat
-  if (first_name) user.first_name = first_name;
-  if (last_name) user.last_name = last_name;
-  if (email) user.email = email;
-
-  res.status(httpStatus.OK).json({
-    statusCode: httpStatus.OK,
-    message: 'User updated successfully',
-    data: { user },
-  });
 };
-// DELETE: deleteUser
-const deleteUser = (req, res) => {
-  const { id } = req.params;
-  const user = users.find((user) => user.id === id);
 
-  if (!user) {
-    return res.status(httpStatus.NOT_FOUND).json({
-      statusCode: httpStatus.NOT_FOUND,
-      message: 'User id not found',
+const getUserById = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    if (!id) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        statusCode: httpStatus.NOT_FOUND,
+        message: 'Người dùng không tồn tại',
+        data: {},
+      });
+    }
+
+    const user = await User.findOne({ _id: id });
+    res.status(httpStatus.OK).json({
+      statusCode: httpStatus.OK,
+      message: 'Lấy danh người dùng thành công',
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Đã xảy ra lỗi',
+      data: {},
     });
   }
-  // xoa
-  const delUser = users.filter((user) => user.id !== id);
-
-  res.status(httpStatus.OK).json({
-    statusCode: httpStatus.OK,
-    message: 'User deleted successfully',
-    data: { delUser },
-  });
 };
-// GET: verifyUser
-const verifyUser = (req, res) => {
-  const { id } = req.params;
-  const user = users.find((user) => user.id === id);
 
-  if (!user) {
-    return res.status(httpStatus.NOT_FOUND).json({
-      statusCode: httpStatus.NOT_FOUND,
-      message: 'User id not found',
+const deleteUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    if (!id) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        statusCode: httpStatus.NOT_FOUND,
+        message: 'Người dùng không tồn tại',
+        data: {},
+      });
+    }
+
+    const user = await User.deleteOne({ _id: id });
+    res.status(httpStatus.OK).json({
+      statusCode: httpStatus.OK,
+      message: 'Xoá người dùng thành công',
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Đã xảy ra lỗi',
+      data: {},
+    });
+  }
+};
+
+const searchUserByName = async (req, res) => {
+  try {
+    const fullName = req.query.name;
+    if (!fullName) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        statusCode: httpStatus.BAD_REQUEST,
+        message: 'Tên tìm kiếm không được để trống',
+        data: {},
+      });
+    }
+
+    const user = await User.findOne({
+      fullName: { $regex: fullName, $options: 'i' },
+    });
+
+    if (!user) {
+      return res.status(httpStatus.NOT_FOUND).json({
+        statusCode: httpStatus.NOT_FOUND,
+        message: 'Không tìm thấy người dùng',
+        data: {},
+      });
+    }
+
+    res.status(httpStatus.OK).json({
+      statusCode: httpStatus.OK,
+      message: 'Tìm kiếm thành công',
       data: { user },
     });
+  } catch (error) {
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Đã xảy ra lỗi',
+      data: {},
+    });
   }
-  user.isVerified = true;
-
-  res.status(httpStatus.OK).json({
-    statusCode: httpStatus.OK,
-    messgae: 'User authentication successful',
-  });
 };
 
-module.exports = { getUser, getUserById, createUser, updateUser, deleteUser, verifyUser };
+module.exports = {
+  createUser,
+  updateUser,
+  deleteUser,
+  getUsers,
+  searchUserByName,
+  getUserById,
+};
