@@ -41,8 +41,8 @@ const createUser = async (req, res) => {
       });
       return;
     }
-    const salt = bcrypt.genSaltSync(10);
-    const hashPassword = bcrypt.hashSync(password, salt);
+    const salt = bcrypt.genSalt(10);
+    const hashPassword = bcrypt.hash(password, salt);
 
     const user = await User.create({
       fullName: fullName,
