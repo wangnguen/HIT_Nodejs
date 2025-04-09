@@ -1,6 +1,8 @@
 const httpStatus = require('http-status-codes');
 const User = require('../../models/user.model');
-const bcrypt = require('bcryptjs');
+const bcryptjs = require('bcryptjs');
+const bcrypt = require('bcrypt');
+const { SALT_ROUNDS } = require('../../constants/user.constant');
 
 const getUsers = async (req, res) => {
   try {
@@ -41,13 +43,19 @@ const createUser = async (req, res) => {
       });
       return;
     }
-    const salt = bcrypt.genSaltSync(10);
-    const hashPassword = bcrypt.hashSync(password, salt);
+
+    // bcrpytjs
+    const salt = await bcryptjs.genSalt(10);
+    const hashPassword = await bcryptjs.hash(password, salt);
+
+    // bcrypt
+    const hashPasswordBcrypt = await bcrypt.hash(password, SALT_ROUNDS);
 
     const user = await User.create({
       fullName: fullName,
       email: email,
-      password: hashPassword,
+      // password: hashPassword,
+      password: hashPasswordBcrypt,
     });
     res.status(httpStatus.CREATED).json({
       statusCode: httpStatus.CREATED,
