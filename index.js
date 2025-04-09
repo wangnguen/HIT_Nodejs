@@ -1,21 +1,24 @@
-const express = require('express');
-const app = express();
-const path = require('path');
-
 // dotenv
 require('dotenv').config();
-
 // db
 require('./configs/database');
+
+const express = require('express');
+const morgan = require('morgan');
+const app = express();
+const path = require('path');
+const PORT = process.env.PORT || 3005;
+
+const clientPage = require('./routes/client/index.route');
+
+// middleware
+app.use(morgan('dev'));
 
 // static file
 app.use(express.static(path.join(__dirname, 'public')));
 
-// json -> js
+// send data from fe to be
 app.use(express.json());
-
-const PORT = process.env.PORT || 3000;
-const clientPage = require('./routes/client/index.route');
 
 // view engine
 app.set('view engine', 'pug');
