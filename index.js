@@ -9,10 +9,13 @@ const app = express();
 const path = require('path');
 const PORT = process.env.PORT || 3005;
 
+const errorHandler = require('./middlewares/error.middleware');
+
 const clientPage = require('./routes/client/index.route');
 
 // middleware
 app.use(morgan('dev'));
+app.use(errorHandler); // Đăng ký middleware xử lý lỗi
 
 // static file
 app.use(express.static(path.join(__dirname, 'public')));

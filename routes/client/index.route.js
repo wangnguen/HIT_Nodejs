@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const homeRoutes = require('./home.route');
 const userRoutes = require('./user.route');
+const errorHandler = require('../../middlewares/error.middleware');
 
 router.use('/', homeRoutes);
 router.use('/api/v1/users', userRoutes);
@@ -12,5 +13,7 @@ router.get('*', (req, res) => {
     data: {},
   });
 });
+
+router.use(errorHandler);
 
 module.exports = router;
