@@ -1,185 +1,124 @@
 const httpStatus = require('http-status-codes');
+
 const User = require('../../models/user.model');
-const bcrypt = require('bcryptjs');
+const catchAsync = require('../../utils/catchAsync');
+const ApiError = require('../../utils/ApiError');
 
-const getUsers = async (req, res) => {
-  try {
-    const users = await User.find({});
-    // .select('-password')
-    res.status(httpStatus.OK).json({
-      statusCode: httpStatus.OK,
-      message: 'Lấy danh sách người dùng',
-      data: {
-        users,
-      },
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Đã xảy ra lỗi',
-    });
+const getUsers = catchAsync(async (req, res) => {
+  const users = await User.find({});
+  res.status(httpStatus.OK).json({
+    statusCode: httpStatus.OK,
+    message: 'Lấy danh sách người dùng thành công !',
+    data: {
+      users,
+    },
+  });
+});
+
+const createUser = catchAsync(async (req, res) => {
+  const { fullName, email, password } = req.body;
+
+  const isExistEmail = await User.findOne({ email: email });
+  if (isExistEmail) {
+    throw new ApiError(httpStatus.CONFLICT, 'Người dùng đã tồn tại !');
   }
-};
 
-const createUser = async (req, res) => {
-  try {
-    const { fullName, email, password } = req.body;
-    if (!fullName || !email || !password) {
-      res.status(httpStatus.BAD_REQUEST).json({
-        statusCode: httpStatus.BAD_REQUEST,
-        message: 'Vui lòng nhập đủ các trường',
-      });
-      return;
-    }
+  const user = await User.create({
+    fullName: fullName,
+    email: email,
+    password: password, // da ma hoa ben model
+  });
 
-    const isExistEmail = await User.findOne({ email: email });
+  res.status(httpStatus.CREATED).json({
+    statusCode: httpStatus.CREATED,
+    message: 'Tạo người dùng thành công !',
+    data: {
+      user,
+    },
+  });
+});
+
+const updateUser = catchAsync(async (req, res) => {
+  // const user = await User.findById(req.params.id);
+  // Object.assign(user, req.body);
+  // await user.save();
+
+  const isExist = await User.findById(req.params.id);
+  if (!isExist) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Người dùng không tồn tại');
+  }
+
+  const { email } = req.body;
+
+  if (email) {
+    // tìm id khác với id.param
+    const isExistEmail = await User.findOne({ email, _id: { $ne: req.params.id } });
     if (isExistEmail) {
-      res.status(httpStatus.CONFLICT).json({
-        statusCode: httpStatus.CONFLICT,
-        message: 'Email đã tồn tại',
-      });
-      return;
+      throw new ApiError(httpStatus.CONFLICT, 'Email đã tồn tại');
     }
-    const salt = bcrypt.genSaltSync(10);
-    const hashPassword = bcrypt.hashSync(password, salt);
-
-    const user = await User.create({
-      fullName: fullName,
-      email: email,
-      password: hashPassword,
-    });
-    res.status(httpStatus.CREATED).json({
-      statusCode: httpStatus.CREATED,
-      message: 'Tạo người dùng thành công.',
-      data: {
-        user,
-      },
-    });
-  } catch (error) {
-    console.log(error);
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Đã xảy ra lỗi',
-    });
   }
-};
 
-const updateUser = async (req, res) => {
-  try {
-    // const user = await User.findById(req.params.id);
-    // Object.assign(user, req.body);
-    // await user.save();
+  const userUpdate = req.body;
+  const user = await User.findByIdAndUpdate(req.params.id, userUpdate);
 
-    const userUpdate = req.body;
-    const user = await User.findByIdAndUpdate(req.params.id, userUpdate);
-    if (!user) {
-      return res.status(httpStatus.NOT_FOUND).json({
-        statusCode: httpStatus.NOT_FOUND,
-        message: 'Người dùng không tồn tại',
-      });
-    }
+  res.status(httpStatus.OK).json({
+    statusCode: httpStatus.OK,
+    message: 'Cập nhật người dùng thành công.',
+    data: {
+      user,
+    },
+  });
+});
 
-    res.status(httpStatus.OK).json({
-      statusCode: httpStatus.OK,
-      message: 'Cập nhật người dùng thành công.',
-      data: {
-        user,
-      },
-    });
-  } catch (error) {
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Đã xảy ra lỗi',
-    });
+const getUserById = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const user = await User.findOne({ _id: id });
+  if (!user) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Người dùng không tồn tại !');
   }
-};
 
-const getUserById = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const user = await User.findOne({ _id: id });
-    if (!user || !id) {
-      return res.status(httpStatus.NOT_FOUND).json({
-        statusCode: httpStatus.NOT_FOUND,
-        message: 'Người dùng không tồn tại',
-      });
-    }
+  res.status(httpStatus.OK).json({
+    statusCode: httpStatus.OK,
+    message: 'Lấy danh người dùng thành công !',
+    data: {
+      user,
+    },
+  });
+});
 
-    res.status(httpStatus.OK).json({
-      statusCode: httpStatus.OK,
-      message: 'Lấy danh người dùng thành công',
-      data: {
-        user,
-      },
-    });
-  } catch (error) {
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Đã xảy ra lỗi',
-    });
+const deleteUser = catchAsync(async (req, res) => {
+  const id = req.params.id;
+  const user = await User.deleteOne({ _id: id });
+  if (!user) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Người dùng không tồn tại !');
   }
-};
 
-const deleteUser = async (req, res) => {
-  try {
-    const id = req.params.id;
-    const user = await User.deleteOne({ _id: id });
-    if (!user || !id) {
-      return res.status(httpStatus.NOT_FOUND).json({
-        statusCode: httpStatus.NOT_FOUND,
-        message: 'Người dùng không tồn tại',
-      });
-    }
+  res.status(httpStatus.OK).json({
+    statusCode: httpStatus.OK,
+    message: 'Xoá người dùng thành công',
+    data: {
+      user,
+    },
+  });
+});
 
-    res.status(httpStatus.OK).json({
-      statusCode: httpStatus.OK,
-      message: 'Xoá người dùng thành công',
-      data: {
-        user,
-      },
-    });
-  } catch (error) {
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Đã xảy ra lỗi',
-    });
+const searchUserByName = catchAsync(async (req, res) => {
+  const fullName = req.query.name;
+  console.log(req.query.name);
+  const user = await User.find({
+    fullName: { $regex: fullName, $options: 'i' },
+  });
+
+  if (!user) {
+    throw new ApiError(httpStatus.BAD_REQUEST, 'Người dùng không tồn tại !');
   }
-};
 
-const searchUserByName = async (req, res) => {
-  try {
-    const fullName = req.query.name;
-    if (!fullName) {
-      return res.status(httpStatus.BAD_REQUEST).json({
-        statusCode: httpStatus.BAD_REQUEST,
-        message: 'Tên tìm kiếm không được để trống',
-      });
-    }
-
-    const user = await User.find({
-      fullName: { $regex: fullName, $options: 'i' },
-    });
-
-    if (!user) {
-      return res.status(httpStatus.NOT_FOUND).json({
-        statusCode: httpStatus.NOT_FOUND,
-        message: 'Không tìm thấy người dùng',
-      });
-    }
-
-    res.status(httpStatus.OK).json({
-      statusCode: httpStatus.OK,
-      message: 'Tìm kiếm thành công',
-      data: { user },
-    });
-  } catch (error) {
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-      statusCode: httpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Đã xảy ra lỗi',
-    });
-  }
-};
+  res.status(httpStatus.OK).json({
+    statusCode: httpStatus.OK,
+    message: 'Tìm kiếm thành công',
+    data: { user },
+  });
+});
 
 module.exports = {
   createUser,

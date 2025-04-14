@@ -1,7 +1,13 @@
 const router = require('express').Router();
 const homeRoutes = require('./home.route');
 const userRoutes = require('./user.route');
+const authRoutes = require('./auth.route');
 
+const errorHandler = require('../../middlewares/error.middleware');
+const authMiddleware = require('../../middlewares/auth.middleware');
+
+router.use('/auth', authRoutes);
+router.use(authMiddleware.verifyToken);
 router.use('/', homeRoutes);
 router.use('/api/v1/users', userRoutes);
 
@@ -12,5 +18,7 @@ router.get('*', (req, res) => {
     data: {},
   });
 });
+
+router.use(errorHandler);
 
 module.exports = router;
