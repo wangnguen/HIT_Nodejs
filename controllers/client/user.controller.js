@@ -24,9 +24,9 @@ const createUser = catchAsync(async (req, res) => {
   }
 
   const user = await User.create({
-    fullName: fullName,
-    email: email,
-    password: password, // da ma hoa ben model
+    fullName,
+    email,
+    password,
   });
 
   res.status(httpStatus.CREATED).json({
@@ -104,7 +104,7 @@ const deleteUser = catchAsync(async (req, res) => {
 
 const searchUserByName = catchAsync(async (req, res) => {
   const fullName = req.query.name;
-  console.log(req.query.name);
+
   const user = await User.find({
     fullName: { $regex: fullName, $options: 'i' },
   });
